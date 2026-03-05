@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký - SocialApp</title>
+    <link rel="stylesheet" href="/social-media-app/static/css/style.css">
+</head>
+
+<body class="bg-main">
+    <div class="auth-shell">
+        <div class="auth-card card">
+            <h1 class="auth-brand">SocialApp</h1>
+            <h2 class="auth-title">Tạo tài khoản</h2>
+            <p class="auth-subtitle">Tham gia và kết nối ngay</p>
+
+            <form id="regForm">
+                <div class="form-group">
+                    <label class="form-label" for="username">Tên đăng nhập</label>
+                    <input type="text" id="username" class="form-input" placeholder="username" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Mật khẩu</label>
+                    <input type="password" id="password" class="form-input" placeholder="••••••••" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="confirm">Xác nhận mật khẩu</label>
+                    <input type="password" id="confirm" class="form-input" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn btn-fill" style="width:100%;">Đăng ký</button>
+            </form>
+
+            <p class="auth-footer">
+                Đã có tài khoản?
+                <a href="/social-media-app/static/pages/login.html">Đăng nhập</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="/social-media-app/static/js/api.js"></script>
+    <script>
+        (async function initRegisterPage() {
+            const currentUser = await Session.refresh();
+            if (currentUser) {
+                goToPage('feed.html');
+                return;
+            }
+
+            document.getElementById('regForm').onsubmit = async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                const confirm = document.getElementById('confirm').value;
+
+                if (password !== confirm) {
+                    showToast('Mật khẩu xác nhận không khớp', 'error');
+                    return;
+                }
+
+                try {
+                    const res = await UserAPI.register(username, password);
+                    if (res.success) {
+                        showToast('Đăng ký thành công');
+                        setTimeout(() => goToPage('login.html'), 700);
+                    } else {
+                        showToast(res.message || 'Username đã tồn tại', 'error');
+                    }
+                } catch (err) {
+                    showToast('Lỗi server', 'error');
+                }
+            };
+        })();
+    </script>
+</body>
+
+</html>
