@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hồ sơ - SocialApp</title>
+    <link rel="stylesheet" href="/social-media-app/static/css/style.css">
+</head>
+
+<body class="bg-main">
+    <div class="x-app">
+        <aside class="x-left">
+            <div class="x-sticky">
+                <a href="/social-media-app/static/pages/feed.html" class="x-logo" aria-label="Trang chủ">Y</a>
+                <nav class="x-nav">
+                    <a href="/social-media-app/static/pages/feed.html" class="x-nav-link">
+                        <span class="x-nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M3 10.5l9-7 9 7"></path>
+                                <path d="M5 9.5V20h14V9.5"></path>
+                            </svg>
+                        </span>
+                        <span class="x-nav-text">Trang chủ</span>
+                    </a>
+                    <a href="/social-media-app/static/pages/profile.html" class="x-nav-link active">
+                        <span class="x-nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <circle cx="12" cy="8" r="4"></circle>
+                                <path d="M4 21a8 8 0 0 1 16 0"></path>
+                            </svg>
+                        </span>
+                        <span class="x-nav-text">Hồ sơ</span>
+                    </a>
+                </nav>
+
+                <button type="button" class="btn btn-fill x-post-pill" onclick="goToPage('feed.html')">Đăng</button>
+
+                <div class="x-userbox">
+                    <div class="x-user-avatar" id="sidebarAvatar">?</div>
+                    <div class="x-user-meta">
+                        <div class="x-user-name" id="currentName">...</div>
+                        <div class="x-user-handle" id="currentHandle">@user</div>
+                    </div>
+                    <button type="button" class="x-logout-inline" onclick="logout()">Thoát</button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="x-center">
+            <div class="x-header x-header-title">Hồ sơ</div>
+
+            <section class="x-section profile-top">
+                <div class="profile-avatar-xl" id="profileAvatar">?</div>
+                <h1 id="profileUsername" class="profile-username">Đang tải...</h1>
+                <p id="profileRole" class="profile-meta">@user</p>
+
+                <div class="stats-row">
+                    <div class="stat-group">
+                        <div class="stat-number" id="countPosts">0</div>
+                        <div class="stat-label">Bài viết</div>
+                    </div>
+                    <div class="stat-group">
+                        <div class="stat-number" id="countFollowers">0</div>
+                        <div class="stat-label">Followers</div>
+                    </div>
+                    <div class="stat-group">
+                        <div class="stat-number" id="countFollowing">0</div>
+                        <div class="stat-label">Following</div>
+                    </div>
+                </div>
+
+                <div id="followActionSection" class="profile-follow-action"></div>
+            </section>
+
+            <section class="x-section profile-posts-heading">
+                <h3 class="profile-posts-title">Bài viết của <span class="profile-owner-name"></span></h3>
+            </section>
+
+            <section id="postsList">
+                <div class="x-section-muted">Đang tải bài viết...</div>
+            </section>
+        </main>
+
+        <aside class="x-right">
+            <div class="x-sticky">
+                <div class="x-widget" style="margin-top:0; margin-bottom:12px;">
+                    <h3 class="x-side-title">Đang theo dõi</h3>
+                    <div id="followingList"><p style="color:var(--x-text-muted); font-size:13px;">Đang tải...</p></div>
+                </div>
+
+                <div class="x-widget">
+                    <h3 class="x-side-title">Người theo dõi</h3>
+                    <div id="followersList"><p style="color:var(--x-text-muted); font-size:13px;">Đang tải...</p></div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script src="/social-media-app/static/js/api.js"></script>
+    <script>
+        let currentUser = null;
+
+        const params = new URLSearchParams(window.location.search);
+        let profileId = null;
+        let isSelf = false;
+
+        async function initProfile() {
+            try {
+                const user = await UserAPI.getById(profileId);
+                const counts = await FollowAPI.getCount(profileId);
+                const posts = await PostAPI.getByUser(profileId);
+
+                document.getElementById('profileAvatar').textContent = user.username.charAt(0).toUpperCase();
+                document.getElementById('profileUsername').textContent = user.username;
+                document.getElementById('profileRole').textContent = '@' + user.username.toLowerCase() + ' · Tham gia ' + formatDate(user.createdAt);
+                document.querySelectorAll('.profile-owner-name').forEach(el => {
+                    el.textContent = isSelf ? 'bạn' : user.username;
+                });
+
+                document.getElementById('countPosts').textContent = posts.length;
+                document.getElementById('countFollowers').textContent = counts.followers;
+                document.getElementById('countFollowing').textContent = counts.following;
+
+                if (!isSelf) {
+                    const check = await FollowAPI.check(profileId);
+                    renderFollowButton(check.isFollowing);
+                }
+
+                renderPosts(posts);
+                renderFollowersLists();
+            } catch (e) {
+                console.error('Profile Error', e);
+            }
+        }
+
+        function renderFollowButton(isFollowing) {
+            document.getElementById('followActionSection').innerHTML = `
+                <button class="btn ${isFollowing ? 'btn-outline' : 'btn-fill'}" onclick="toggleFollow(${isFollowing})">
+                    ${isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                </button>
+            `;
+        }
+
+        async function toggleFollow(current) {
+            const res = current
+                ? await FollowAPI.unfollow(profileId)
+                : await FollowAPI.follow(profileId);
+
+            if (res.success) {
+                showToast(current ? 'Đã hủy theo dõi' : 'Đã theo dõi');
+                initProfile();
+            } else {
+                showToast(res.message || 'Thao tác thất bại', 'error');
+            }
+        }
+
+        function renderPosts(posts) {
+            const container = document.getElementById('postsList');
+            if (posts.length === 0) {
+                container.innerHTML = '<div class="x-section" style="color:var(--x-text-muted);">Chưa có bài viết nào.</div>';
+                return;
+            }
+
+            const toText = (p) => {
+                const title = (p.title || '').trim();
+                const body = (p.body || '').trim();
+                if (body && title && body !== title) return `${title}\n${body}`;
+                return body || title || '';
+            };
+
+            container.innerHTML = posts.map(p => `
+                <article class="profile-post-card">
+                    <div class="profile-post-meta">${formatDate(p.createdAt)}</div>
+                    <div class="profile-post-text">${escapeHtml(toText(p))}</div>
+                </article>
+            `).join('');
+        }
+
+        async function renderFollowersLists() {
+            try {
+                const following = await FollowAPI.getFollowing(profileId);
+                const followers = await FollowAPI.getFollowers(profileId);
+
+                const renderItem = (u, idKey) => `
+                    <div class="user-row">
+                        <div class="user-info-sm" style="cursor:pointer;" onclick="window.location.href='${pageUrl('profile.html', { id: u[idKey] })}'">
+                            <div class="avatar-sm">${escapeHtml(u.username.charAt(0).toUpperCase())}</div>
+                            <span style="font-size:14px;">${escapeHtml(u.username)}</span>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('followingList').innerHTML = following.length === 0
+                    ? '<p style="color:var(--x-text-muted); font-size:13px;">Chưa theo dõi ai.</p>'
+                    : following.map(u => renderItem(u, 'followedUserId')).join('');
+
+                document.getElementById('followersList').innerHTML = followers.length === 0
+                    ? '<p style="color:var(--x-text-muted); font-size:13px;">Chưa có người theo dõi.</p>'
+                    : followers.map(u => renderItem(u, 'followingUserId')).join('');
+            } catch (e) {
+                console.error('Followers list error', e);
+            }
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        async function logout() {
+            await UserAPI.logout();
+            Session.clear();
+            goToPage('login.html');
+        }
+
+        (async function bootProfilePage() {
+            currentUser = await requireAuth();
+            if (!currentUser) {
+                return;
+            }
+
+            document.getElementById('sidebarAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+            document.getElementById('currentName').textContent = currentUser.username;
+            document.getElementById('currentHandle').textContent = '@' + currentUser.username.toLowerCase();
+
+            profileId = params.get('id') ? parseInt(params.get('id'), 10) : currentUser.id;
+            isSelf = profileId === currentUser.id;
+
+            await initProfile();
+        })();
+    </script>
+</body>
+
+</html>
