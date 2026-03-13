@@ -17,17 +17,45 @@
     <!-- Quét package để tìm các bean có annotation -->
     <context:component-scan base-package="com.demo.socialmedia" />
 
-    <!-- Cấu hình DataSource kết nối MySQL -->
+    <!-- Cho phép override cấu hình từ biến môi trường / JVM properties -->
+    <context:property-placeholder system-properties-mode="OVERRIDE" />
+
+    <!-- Cấu hình DataSource.
+         Mặc định dùng MySQL local; có thể override bằng biến môi trường (Render, cloud...). -->
     <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="driverClassName" value="com.mysql.cj.jdbc.Driver" />
-        <property name="url" value="jdbc:mysql://localhost:3306/social_media_db?useSSL=false&amp;serverTimezone=UTC&amp;allowPublicKeyRetrieval=true" />
-        <property name="username" value="root" />
-        <property name="password" value="" />
+        <property name="driverClassName" value="${DB_DRIVER:com.mysql.cj.jdbc.Driver}" />
+        <property name="url" value="${DB_URL:jdbc:mysql://localhost:3306/social_media_db?useSSL=false&amp;serverTimezone=UTC&amp;allowPublicKeyRetrieval=true}" />
+        <property name="username" value="${DB_USERNAME:root}" />
+        <property name="password" value="${DB_PASSWORD:}" />
+    </bean>
+
+    <!-- Tự tạo schema + seed dữ liệu demo khi DB trống -->
+    <bean id="databasePopulator" class="org.springframework.jdbc.datasource.init.ResourceDatabasePopulator">
+        <property name="continueOnError" value="true" />
+        <property name="ignoreFailedDrops" value="true" />
+        <property name="sqlScriptEncoding" value="UTF-8" />
+        <property name="scripts">
+            <list>
+                <value>classpath:sql/schema.sql</value>
+                <value>classpath:sql/data.sql</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="dataSourceInitializer" class="org.springframework.jdbc.datasource.init.DataSourceInitializer">
+        <property name="dataSource" ref="dataSource" />
+        <property name="databasePopulator" ref="databasePopulator" />
+        <property name="enabled" value="true" />
     </bean>
 
     <!-- JdbcTemplate bean -->
     <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
         <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="prefix" value="/WEB-INF/views/" />
+        <property name="suffix" value=".jsp" />
     </bean>
 
     <!-- Cho phép truy cập file tĩnh (HTML, CSS, JS) -->

@@ -1,26 +1,25 @@
 # Social Media App - Spring MVC Demo
 
-Ứng dụng mạng xã hội demo sử dụng **Spring MVC truyền thống** với cấu hình XML, MySQL qua **JdbcTemplate** và giao diện thuần **HTML/CSS/JS**.
+Ứng dụng mạng xã hội demo sử dụng **Spring MVC truyền thống** với cấu hình XML, MySQL qua **JdbcTemplate** và giao diện **JSP server-rendered**.
 
 ## Công nghệ sử dụng
 - **Backend:** Spring MVC 5.3, Java 17/21, Maven WAR
 - **Database:** MySQL 8, Spring JDBC / JdbcTemplate
-- **Frontend:** HTML/CSS/JS thuần, gọi REST API JSON
+- **Frontend:** JSP server-rendered + CSS thuần
 - **Server:** Apache Tomcat 9
 
 ## Tính năng chính
 1. **Quản lý người dùng**
 - Đăng ký tài khoản mới
 - Đăng nhập bằng **server-side session**
-- Đăng xuất và kiểm tra người dùng hiện tại qua `/api/users/me`
+- Đăng xuất bằng server-side session
 
 2. **Quản lý bài viết**
 - Tạo bài viết mới
 - Xem bảng tin từ tài khoản của mình và người đang theo dõi
-- Chỉnh sửa và xóa bài viết cá nhân
+- Xem hồ sơ cá nhân
 
 3. **Follow / Unfollow**
-- Xem danh sách người dùng
 - Theo dõi và hủy theo dõi tài khoản khác
 - Xem hồ sơ với số bài viết, following, followers
 
@@ -42,10 +41,9 @@ social-media-app/
         ├── WEB-INF/
         │   ├── web.xml
         │   └── spring/dispatcher-servlet.xml
+        │   └── views/
         └── static/
-            ├── css/style.css
-            ├── js/api.js
-            └── pages/
+            └── css/style.css
 ```
 
 ## Yêu cầu môi trường
@@ -92,5 +90,4 @@ Sau khi deploy xong:
 http://localhost:8080/social-media-app/
 ```
 
-`web.xml` đã cấu hình welcome file về trang đăng nhập nên không cần gõ trực tiếp đường dẫn `static/pages/login.html`.
-
+Ứng dụng hiện dùng DispatcherServlet tại `/` và render JSP trực tiếp từ `WEB-INF/views`.

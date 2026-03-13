@@ -9,6 +9,7 @@ CREATE DATABASE social_media_db
     COLLATE utf8mb4_unicode_ci;
 
 USE social_media_db;
+SET NAMES utf8mb4;
 
 -- Bảng users (có bổ sung cột password)
 CREATE TABLE IF NOT EXISTS users (

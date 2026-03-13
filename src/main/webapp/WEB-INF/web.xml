@@ -24,7 +24,7 @@
 
     <servlet-mapping>
         <servlet-name>dispatcher</servlet-name>
-        <url-pattern>/api/*</url-pattern>
+        <url-pattern>/</url-pattern>
     </servlet-mapping>
 
     <!-- UTF-8 Encoding Filter -->
@@ -45,8 +45,4 @@
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 
-    <!-- Welcome File -->
-    <welcome-file-list>
-        <welcome-file>static/pages/login.html</welcome-file>
-    </welcome-file-list>
 </web-app>
